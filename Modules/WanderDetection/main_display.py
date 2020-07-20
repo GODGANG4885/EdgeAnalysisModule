@@ -1,9 +1,15 @@
 from __future__ import print_function
 import os
 import numpy as np
+import cv2
 # import matplotlib
 
 # from skimage import io
+import matplotlib
+# matplotlib.use('TkAgg')
+import matplotlib.pyplot as plt
+import matplotlib.patches as patches
+from skimage import io
 
 import glob
 import time
@@ -257,8 +263,15 @@ class WanderDetection:
         self.wandering_count_frame = 20
     def analysis_from_json(self, od_result,frame_n):
 
-        # frame = od_result["frame_num"]
+        # image_path = od_result["image_path"]
+        
+      
+        # cv2.imshow("",image)
         frame = frame_n
+        image_path = "/database/aihub/test_dataset/24_360p/{}.jpg".format(frame)
+        image = cv2.imread(image_path,cv2.IMREAD_COLOR)
+
+
         # print(frame)
         detection_result = od_result["results"][0]["detection_result"]
         result = {}
@@ -280,19 +293,34 @@ class WanderDetection:
         
         # print('%d,%d,%.2f,%.2f,%.2f,%.2f'%(frame,trackers[4],trackers[0],trackers[1],trackers[2]-trackers[0],trackers[3]-trackers[1]))
         # print(trackers)
-        # rule 1 
+        # rule 1
+ 
         for d in trackers:
+
             while len(self.id_stack) <= d[4]:
                 self.id_stack.append(0)
+
             self.id_stack[int(d[4])] +=1
             # detect Wander
+            d = d.astype(np.int32)
+            cv2.rectangle(image, (d[0],d[1]), (d[2], d[3]), (0,255,0), 2)
             if self.id_stack[int(d[4])] >= self.wandering_count_frame: #if id_count
 
-                result["event"] ="wander"
-                result["frame"] = int(frame)
-                result["id_num"] = int(d[4])
-                result["id_count"] = self.id_stack[int(d[4])]
-                # print("wander frame : {}, id_num : {}, id_count {}".format(frame,int(d[4]), self.id_stack[int(d[4])]))
-                self.result.append(result)
+              result["event"] ="wander"
+              result["frame"] = int(frame)
+              result["id_num"] = int(d[4])
+              result["id_count"] = self.id_stack[int(d[4])]
+              # print("wander frame : {}, id_num : {}, id_count {}".format(frame,int(d[4]), self.id_stack[int(d[4])]))
+              self.result.append(result)
+
+              cv2.rectangle(image, (d[0],d[1]), (d[2], d[3]), (0, 0, 255), 10)
+              cv2.putText(image, ("Wander"),
+                        (d[0], d[1]), 0, 5e-3 * 100, (0, 0, 255), 10)
+              # cv2.imshow("test",image)
+              # cv2.waitKey(0)
+        cv2.imwrite("/home/godgang/EdgeAnalysisModule/result/test1/{}.jpg".format(frame), image)
+            
+            # ax1.add_patch(patches.Rectangle((d[0],d[1]),d[2]-d[0],d[3]-d[1],fill=False,lw=3,ec=colours[d[4]%32,:]))
+
 
         return result

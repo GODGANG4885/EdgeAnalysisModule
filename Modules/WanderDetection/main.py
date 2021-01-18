@@ -25,7 +25,7 @@ def linear_assignment(cost_matrix):
     return np.array(list(zip(x, y)))
 
 
-@jit
+# @jit
 def iou(bb_test, bb_gt):
   """
   Computes IUO between two bboxes in the form [x1,y1,x2,y2]
@@ -41,6 +41,24 @@ def iou(bb_test, bb_gt):
     + (bb_gt[2] - bb_gt[0]) * (bb_gt[3] - bb_gt[1]) - wh)
   return(o)
 
+def iou_batch(bb_test, bb_gt):
+  
+  """
+  From SORT: Computes IOU between two bboxes in the form [x1,y1,x2,y2]
+  """
+  bb_gt = np.expand_dims(bb_gt, 0)
+  bb_test = np.expand_dims(bb_test, 1)
+  
+  xx1 = np.maximum(bb_test[..., 0], bb_gt[..., 0])
+  yy1 = np.maximum(bb_test[..., 1], bb_gt[..., 1])
+  xx2 = np.minimum(bb_test[..., 2], bb_gt[..., 2])
+  yy2 = np.minimum(bb_test[..., 3], bb_gt[..., 3])
+  w = np.maximum(0., xx2 - xx1)
+  h = np.maximum(0., yy2 - yy1)
+  wh = w * h
+  o = wh / ((bb_test[..., 2] - bb_test[..., 0]) * (bb_test[..., 3] - bb_test[..., 1])                                      
+    + (bb_gt[..., 2] - bb_gt[..., 0]) * (bb_gt[..., 3] - bb_gt[..., 1]) - wh)                                              
+  return(o)  
 
 def convert_bbox_to_z(bbox):
   """
@@ -253,7 +271,7 @@ class WanderDetection:
         self.result = 0
 
     def analysis_from_json(self, od_result):
-        # frame = od_result["frame_num"]
+        frame = od_result["frame_num"]
         # frame = frame_n
         # print(frame)
         start = 0
@@ -262,10 +280,10 @@ class WanderDetection:
             start = time.time()
 
 
-        od_result = od_result.decode('utf-8').replace("'", '"')
-        od_result = json.loads(od_result)
+        # od_result = od_result.decode('utf-8').replace("'", '"')
+        # od_result = json.loads(od_result)
         
-        frame = frame_num
+        # frame = frame_num
         # frame = od_result["frame_num"]
         # print("frame: {}".format(frame))
         detection_result = od_result["results"][0]["detection_result"]
@@ -296,7 +314,7 @@ class WanderDetection:
             
             self.id_stack[int(d[4])] +=1
             # detect Wander
-            if self.id_stack[int(d[4])] >= 30:        
+            if self.id_stack[int(d[4])] >= 20:        
               # if previous_id_stack[int(d[4])]!=self.id_stack[int(d[4])]:
               result["event"] ="wander"
               result["frame"] = int(frame)

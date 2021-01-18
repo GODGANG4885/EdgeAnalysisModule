@@ -19,7 +19,7 @@ if __name__ == '__main__':
     file_list = os.listdir(opt.json_seq_path)
     file_list.sort()
     # print ("file_list: {}".format(file_list))
-    with open("wander_0625_result.json", "w") as json_file:
+    with open("wander_5ssd+_result.json", "w") as json_file:
         result =[]
         
         

@@ -15,12 +15,17 @@ class FightDetection:
 
     def __init__(self, debug):
         self.model_name = "FightDetection"
-        self.analysis_time = 0
-        self.results = []
-        self.result = "safe"
+        self.history = []
         self.debug = debug
+        self.result = 0
 
     def analysis_from_json(self, od_result):
+
+        #if too long
+        if len(self.history) >= 10000:
+            self.history = []
+
+
         self.result = "safe"
         start = 0
         end = 0
@@ -30,8 +35,6 @@ class FightDetection:
         od_result = od_result.decode('utf-8').replace("'", '"')
         od_result = json.loads(od_result)
         #if too long
-        if len(self.results) >= 10000:
-            self.results = []
 
         position_list = []
         dist_list = []
@@ -58,21 +61,18 @@ class FightDetection:
         # Rule 1) If two people are close to each other
         if dist_list:
             for dist_ in dist_list:
-                if dist_ < 500:
-                    self.results.append(1) #return true
-                    self.result = "warning"
+                if dist_ < 30:
+                    self.history.append(1) #return true
+                    self.result = 1
                     return self.result
 
-        # Rule 2) Simple smoothing
-        if sum(self.results[-10:]) > 6:
-            self.results.append(1) #return true
-            self.result = "warning"
+        # Rule 2) Simple smoothing 
+        if sum(self.history[-20:]) > 13:
+            self.history.append(1) #return true
+            self.result = 1
             return self.result
 
-        self.results.append(0) #return false
-        self.result = "safe"
+        self.history.append(0) #return false
+        self.result = 0
 
-        return self.result
-        
-        # Rule 3) If ...
-        # Rule 4) If ...
+        return self.result 

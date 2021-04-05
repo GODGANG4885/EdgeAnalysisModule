@@ -1,5 +1,5 @@
-from obstacle.main import Obstacle
-from tailing_kidnapping.main import Tailing_Kidnapping
+from WanderDetection.main import WanderDetection
+# from tailing_kidnapping.main import Tailing_Kidnapping
 import argparse
 import os
 import json

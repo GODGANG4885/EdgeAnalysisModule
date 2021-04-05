@@ -1,13 +1,10 @@
 from __future__ import print_function
 import os
 import numpy as np
-# import matplotlib
-
-# from skimage import io
-
-import glob
+import json
 import time
-import argparse
+# import copy
+
 from filterpy.kalman import KalmanFilter
 
 try:
@@ -29,7 +26,7 @@ def linear_assignment(cost_matrix):
     return np.array(list(zip(x, y)))
 
 
-@jit
+# @jit
 def iou(bb_test, bb_gt):
   """
   Computes IUO between two bboxes in the form [x1,y1,x2,y2]
@@ -45,6 +42,24 @@ def iou(bb_test, bb_gt):
     + (bb_gt[2] - bb_gt[0]) * (bb_gt[3] - bb_gt[1]) - wh)
   return(o)
 
+def iou_batch(bb_test, bb_gt):
+  
+  """
+  From SORT: Computes IOU between two bboxes in the form [x1,y1,x2,y2]
+  """
+  bb_gt = np.expand_dims(bb_gt, 0)
+  bb_test = np.expand_dims(bb_test, 1)
+  
+  xx1 = np.maximum(bb_test[..., 0], bb_gt[..., 0])
+  yy1 = np.maximum(bb_test[..., 1], bb_gt[..., 1])
+  xx2 = np.minimum(bb_test[..., 2], bb_gt[..., 2])
+  yy2 = np.minimum(bb_test[..., 3], bb_gt[..., 3])
+  w = np.maximum(0., xx2 - xx1)
+  h = np.maximum(0., yy2 - yy1)
+  wh = w * h
+  o = wh / ((bb_test[..., 2] - bb_test[..., 0]) * (bb_test[..., 3] - bb_test[..., 1])                                      
+    + (bb_gt[..., 2] - bb_gt[..., 0]) * (bb_gt[..., 3] - bb_gt[..., 1]) - wh)                                              
+  return(o)  
 
 def convert_bbox_to_z(bbox):
   """
@@ -252,14 +267,30 @@ class WanderDetection:
         # self.wandering_id_list = []
         self.mot_tracker = Sort()
         # print(self.model_name)
-        self.result = []
-        self.temp_frame =1
-        self.wandering_count_frame = 20
-    def analysis_from_json(self, od_result,frame_n):
 
-        # frame = od_result["frame_num"]
-        frame = frame_n
+        self.analysis_time = 0
+        self.debug = debug
+        self.history = []
+        self.temp_frame =1
+        self.result = 0
+
+    def analysis_from_json(self, od_result):
+        frame = od_result["frame_num"]
+        # frame = frame_n
         # print(frame)
+        start = 0
+        end = 0
+        if self.debug :
+            start = time.time()
+
+
+        # od_result = od_result.decode('utf-8').replace("'", '"')
+        # od_result = json.loads(od_result)
+        
+        # frame = frame_num
+        # frame = od_result["frame_num"]
+        # print("frame: {}".format(frame))
+
         detection_result = od_result["results"][0]["detection_result"]
         result = {}
         det_list = []
@@ -279,20 +310,25 @@ class WanderDetection:
         trackers = self.mot_tracker.update(det_list) # output : x1,y1,x2,y2,  track_id
         
         # print('%d,%d,%.2f,%.2f,%.2f,%.2f'%(frame,trackers[4],trackers[0],trackers[1],trackers[2]-trackers[0],trackers[3]-trackers[1]))
-        # print(trackers)
+        # print(trackers[:,4])
         # rule 1 
+        self.result = 0
         for d in trackers:
             while len(self.id_stack) <= d[4]:
                 self.id_stack.append(0)
+            # previous_id_stack = copy.deepcopy(self.id_stack)
+            
             self.id_stack[int(d[4])] +=1
             # detect Wander
-            if self.id_stack[int(d[4])] >= self.wandering_count_frame: #if id_count
+            if self.id_stack[int(d[4])] >= 20:        
+              # if previous_id_stack[int(d[4])]!=self.id_stack[int(d[4])]:
+              result["event"] ="wander"
+              result["frame"] = int(frame)
+              result["id_num"] = int(d[4])
+              result["id_count"] = self.id_stack[int(d[4])]
+              # print("wander frame : {}, id_num : {}, id_count {}".format(frame,int(d[4]), self.id_stack[int(d[4])]))
+              self.history.append(result)
+              self.result = 1
+        
+        return self.result
 
-                result["event"] ="wander"
-                result["frame"] = int(frame)
-                result["id_num"] = int(d[4])
-                result["id_count"] = self.id_stack[int(d[4])]
-                # print("wander frame : {}, id_num : {}, id_count {}".format(frame,int(d[4]), self.id_stack[int(d[4])]))
-                self.result.append(result)
-
-        return result

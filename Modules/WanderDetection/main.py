@@ -4,6 +4,7 @@ import numpy as np
 import json
 import time
 # import copy
+
 from filterpy.kalman import KalmanFilter
 
 try:
@@ -256,14 +257,17 @@ class Sort(object):
 
 class WanderDetection:
     model = None
+    result = None
     path = os.path.dirname(os.path.abspath(__file__))
 
-    def __init__(self, debug):
+    def __init__(self):
+
         self.model_name = "WanderDetection"
         self.id_stack = [0,0,0,0]
-        self.wandering_id_list = []
+        # self.wandering_id_list = []
         self.mot_tracker = Sort()
         # print(self.model_name)
+
         self.analysis_time = 0
         self.debug = debug
         self.history = []
@@ -286,6 +290,7 @@ class WanderDetection:
         # frame = frame_num
         # frame = od_result["frame_num"]
         # print("frame: {}".format(frame))
+
         detection_result = od_result["results"][0]["detection_result"]
         result = {}
         det_list = []
@@ -302,7 +307,8 @@ class WanderDetection:
                 dets.append(float(info_['label'][0]['score']))
                 det_list.append(dets)
 
-        trackers = self.mot_tracker.update(det_list) # output : track_id, x1,y1,x2,y2
+        trackers = self.mot_tracker.update(det_list) # output : x1,y1,x2,y2,  track_id
+        
         # print('%d,%d,%.2f,%.2f,%.2f,%.2f'%(frame,trackers[4],trackers[0],trackers[1],trackers[2]-trackers[0],trackers[3]-trackers[1]))
         # print(trackers[:,4])
         # rule 1 
@@ -325,3 +331,4 @@ class WanderDetection:
               self.result = 1
         
         return self.result
+

@@ -1,3 +1,4 @@
+
 from WanderDetection.main import WanderDetection
 # from FightDetection.main import FightDetection
 import argparse
@@ -13,7 +14,6 @@ if __name__ == '__main__':
     # try:
     opt = parser.parse_known_args()[0]
 
-    
     model = WanderDetection(0)
 
     file_list = os.listdir(opt.json_seq_path)
